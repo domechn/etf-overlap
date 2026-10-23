@@ -5,7 +5,7 @@ import { SearchBox } from './components/SearchBox';
 import { OverlapMatrix } from './components/OverlapMatrix';
 import { analyzeETFs } from './api';
 import type { AnalysisResult } from './api';
-import { Github, Trash2, TrendingUp, Languages } from 'lucide-react';
+import { Github, Trash2, TrendingUp, Languages, AlertTriangle } from 'lucide-react';
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -88,7 +88,7 @@ function App() {
               <Languages className="w-4 h-4" />
               <span className="uppercase font-medium">{i18n.language}</span>
             </button>
-            <span className="hidden sm:inline">Powered by Yahoo Finance</span>
+            <span className="hidden sm:inline">Data: issuers · SEC · Yahoo</span>
             <a
               href="https://github.com/domechn/etf-cal"
               target="_blank"
@@ -193,21 +193,47 @@ function App() {
                    </p>
                  </div>
                  
+                 {(() => {
+                   const bad = result.tickers.filter(k => result.holdings_meta?.[k] && !result.holdings_meta[k].complete);
+                   return bad.length > 0 ? (
+                     <div className="mb-4 flex gap-2 rounded-lg border border-orange-300 bg-orange-50 p-3 text-sm text-orange-700">
+                       <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                       <span>{t('result.incomplete_banner', { tickers: bad.join(', ') })}</span>
+                     </div>
+                   ) : null;
+                 })()}
+
                  <OverlapMatrix data={result} />
                  
                  {/* Raw Holdings List */}
                  <div className="mt-12">
                     <h3 className="text-lg font-bold mb-4">{t('result.holdings_overview')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {result.tickers.map(ticker => (
-                      <div key={ticker} className="border rounded-lg overflow-hidden">
+                    {result.tickers.map(ticker => {
+                      const meta = result.holdings_meta?.[ticker];
+                      const list = result.holdings[ticker];
+                      const MAX_ROWS = 200;
+                      return (
+                      <div key={ticker} className={`border rounded-lg overflow-hidden ${meta && !meta.complete ? 'border-orange-300' : ''}`}>
                         <div className="bg-gray-50 p-3 border-b font-bold flex flex-wrap items-center justify-between gap-2">
                           <span>{ticker}</span>
                           <span className="text-xs font-normal text-gray-500 self-center truncate max-w-[110px] sm:max-w-[150px]">{result.etf_info[ticker]?.shortname}</span>
                         </div>
+                        {meta && (
+                          <div className={`px-3 py-2 text-xs border-b ${meta.complete ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'}`}>
+                            <div className="flex flex-wrap items-center gap-x-2">
+                              <span className="font-semibold">{meta.complete ? t('result.badge_complete') : t('result.badge_partial')}</span>
+                              <span>· {t(`result.source.${meta.source}`)}</span>
+                              {meta.as_of && <span>· {t('result.as_of', { date: meta.as_of })}</span>}
+                            </div>
+                            {!meta.complete && meta.reason && <div>{t(`result.reason.${meta.reason}`)}</div>}
+                            {meta.source === 'sec' && <div>{t('result.sec_note')}</div>}
+                            {meta.source !== 'yahoo' && <div className="opacity-75">{t('result.count_info', { count: meta.count, coverage: (meta.coverage * 100).toFixed(1) })}</div>}
+                          </div>
+                        )}
                         <ul className="max-h-60 overflow-y-auto divide-y">
-                          {result.holdings[ticker].length > 0 ? (
-                            result.holdings[ticker].map((h, i) => (
+                          {list.length > 0 ? (
+                            list.slice(0, MAX_ROWS).map((h, i) => (
                               <li key={i} className="p-2 text-sm flex justify-between hover:bg-gray-50">
                                 <span className="truncate flex-1 mr-2" title={h.name}>{h.name}</span>
                                 <span className="font-mono text-gray-600">{(h.percent * 100).toFixed(2)}%</span>
@@ -216,9 +242,12 @@ function App() {
                           ) : (
                             <li className="p-4 text-center text-gray-400 text-sm">{t('result.no_data')}</li>
                           )}
+                          {list.length > MAX_ROWS && (
+                            <li className="p-2 text-xs text-center text-gray-400">{t('result.truncated_list', { n: MAX_ROWS, total: list.length })}</li>
+                          )}
                         </ul>
                       </div>
-                    ))}
+                    );})}
                   </div>
                  </div>
               </div>

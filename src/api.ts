@@ -26,7 +26,18 @@ export interface OverlapCell {
   }[];
 }
 
+export interface HoldingsMeta {
+  source: 'ishares' | 'vanguard' | 'spdr' | 'invesco' | 'sec' | 'yahoo';
+  as_of: string;
+  complete: boolean;
+  count: number;
+  total: number;
+  coverage: number;
+  reason: string;
+}
+
 export interface AnalysisResult {
+  holdings_meta: Record<string, HoldingsMeta>;
   holdings: Record<string, Holding[]>;
   etf_info: Record<string, { shortname: string; longname: string; currency: string }>;
   overlap_matrix: OverlapCell[][];

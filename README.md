@@ -57,7 +57,7 @@ npm run lint
 
 | 环境变量 | 说明 |
 | --- | --- |
-| `SEC_USER_AGENT` | 访问 SEC 时使用的 User-Agent，格式 `name email`（SEC 要求声明身份）。默认 `etf-cal domdoumc@gmail.com`，建议改成你自己的。 |
+| `SEC_USER_AGENT` | 访问 SEC 时使用的 User-Agent，格式 `name email`（SEC 要求声明身份）。默认 `etf-overlap domdoumc@gmail.com`，建议改成你自己的。 |
 
 ### SEO
 

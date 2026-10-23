@@ -148,7 +148,7 @@ function App() {
         <button className="rail-btn lang" onClick={toggleLanguage} aria-label={t('nav.language')} title={t('nav.language')}>
           {isEn ? '中' : 'EN'}
         </button>
-        <a className="rail-btn" href="https://github.com/domechn/etf-cal" target="_blank" rel="noopener noreferrer" aria-label={t('nav.github')} title={t('nav.github')}>
+        <a className="rail-btn" href="https://github.com/domechn/etf-overlap" target="_blank" rel="noopener noreferrer" aria-label={t('nav.github')} title={t('nav.github')}>
           <Github size={18} />
         </a>
       </nav>

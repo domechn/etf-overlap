@@ -1,6 +1,6 @@
 const BROWSER_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
-export const SEC_UA = process.env.SEC_USER_AGENT || 'etf-cal domdoumc@gmail.com';
+export const SEC_UA = process.env.SEC_USER_AGENT || 'etf-overlap domdoumc@gmail.com';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

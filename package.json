@@ -1,15 +1,15 @@
 {
-  "name": "etf-cal",
+  "name": "etf-overlap",
   "private": true,
   "version": "1.0.0",
   "description": "ETF overlap calculator: compare full holdings of US and HK ETFs",
   "homepage": "https://etf.domc.me",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/domechn/etf-cal.git"
+    "url": "git+https://github.com/domechn/etf-overlap.git"
   },
   "bugs": {
-    "url": "https://github.com/domechn/etf-cal/issues"
+    "url": "https://github.com/domechn/etf-overlap/issues"
   },
   "author": "domechn",
   "keywords": [

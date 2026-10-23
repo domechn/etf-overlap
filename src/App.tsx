@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Github, X } from 'lucide-react';
 import { SearchBox } from './components/SearchBox';
@@ -11,9 +10,14 @@ import { Mark } from './components/Mark';
 import { analyzeETFs } from './api';
 import type { AnalysisResult } from './api';
 import { int, normKey, pairsOf, pct, rowSizes } from './format';
+import { useDocumentMeta } from './seo';
+
+const SITE = 'https://etf.domc.me';
 
 type Market = 'US' | 'HK';
 type Pair = { i: number; j: number };
+
+const POPULAR: string[][] = [['VTI', 'VOO'], ['SPY', 'VOO'], ['QQQ', 'VOO'], ['QQQ', 'QQQM'], ['SCHD', 'VYM'], ['SCHD', 'JEPI'], ['VTI', 'ITOT']];
 
 const EXAMPLES: string[][] = [['VOO', 'IVV'], ['SPY', 'QQQ', 'SCHD'], ['BND', 'AGG']];
 
@@ -103,6 +107,31 @@ function App() {
     return { hi, lo, full, tied, showLow: pairs.length > 1 };
   }, [result]);
 
+  // Every comparison gets its own title, description and canonical URL (tickers sorted, so VOO,IVV and IVV,VOO share one).
+  const seo = useMemo(() => {
+    if (!result || result.tickers.length < 2) {
+      return { title: t('meta.title'), description: t('meta.description'), url: `${SITE}/` };
+    }
+    const names = result.tickers.join(' vs ');
+    const p = topPair(result);
+    const w = p ? pct(result.overlap_matrix[p.i][p.j].weight) : '';
+    return {
+      title: t('meta.result_title', { names, pct: w }),
+      description: t('meta.result_desc', { names, pct: w }),
+      url: `${SITE}/?etfs=${[...result.tickers].sort().join(',')}`,
+    };
+  }, [result, t]);
+
+  useDocumentMeta({
+    lang: i18n.language.startsWith('en') ? 'en' : 'zh-CN',
+    title: seo.title,
+    description: seo.description,
+    keywords: t('meta.keywords'),
+    url: seo.url,
+    siteName: t('meta.site_name'),
+    image: `${SITE}/og-image.png`,
+  });
+
   const incomplete = result ? result.tickers.filter((tk) => !result.holdings_meta[tk]?.complete) : [];
   const need = 2 - selected.length;
   const canRun = selected.length >= 2 && !loading;
@@ -110,15 +139,6 @@ function App() {
 
   return (
     <div className="shell">
-      <Helmet>
-        <html lang={i18n.language.startsWith('en') ? 'en' : 'zh-CN'} />
-        <title>{t('meta.title')}</title>
-        <meta name="description" content={t('meta.description')} />
-        <meta name="keywords" content={t('meta.keywords')} />
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content={t('meta.title')} />
-        <meta property="og:description" content={t('meta.description')} />
-      </Helmet>
 
       <nav className="rail" aria-label="Site">
         <a className="mark" href="/" aria-label={t('nav.home')} title={t('nav.home')}>
@@ -193,12 +213,46 @@ function App() {
             <p className="ex-label">{t('empty.examples')}</p>
             <div className="examples-grid">
               {EXAMPLES.map((ex, k) => (
-                <button key={ex.join()} className="example" onClick={() => tryExample(ex)}>
+                <a
+                  key={ex.join()}
+                  className="example"
+                  href={`?etfs=${ex.join(',')}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    tryExample(ex);
+                  }}
+                >
                   <b>{ex.join(' + ')}</b>
                   <span>{t(`empty.ex.${k}.name`)}</span>
-                </button>
+                </a>
               ))}
             </div>
+            <p className="ex-label">{t('empty.popular')}</p>
+            <div className="popular">
+              {POPULAR.map((ex) => (
+                <a
+                  key={ex.join()}
+                  href={`?etfs=${[...ex].sort().join(',')}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    tryExample(ex);
+                  }}
+                >
+                  {ex.join(' vs ')}
+                </a>
+              ))}
+            </div>
+            <section className="faq" aria-labelledby="faq-h">
+              <h2 id="faq-h">{t('faq.title')}</h2>
+              <div className="faq-grid">
+                {(t('faq.items', { returnObjects: true }) as { q: string; a: string }[]).map((f) => (
+                  <div key={f.q}>
+                    <h3>{f.q}</h3>
+                    <p>{f.a}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
         )}
 

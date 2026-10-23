@@ -1,16 +1,45 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f2f4f7" />
+    <title>ETF 重叠度计算器：对比美股、港股 ETF 完整持仓 | ETF Overlap Calculator</title>
+    <meta name="description" content="免费的 ETF 持仓重叠度计算器。输入 VOO、IVV、QQQ、SCHD 等美股、港股 ETF，查看完整持仓重叠度矩阵、共同持仓明细和数据来源。Free ETF overlap calculator with full holdings." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <link rel="canonical" href="https://etf.domc.me/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ETF 重叠度" />
+    <meta property="og:title" content="ETF 重叠度计算器：对比美股、港股 ETF 完整持仓" />
+    <meta property="og:description" content="输入两只以上 ETF，查看完整持仓重叠度矩阵、共同持仓明细和数据来源。" />
+    <meta property="og:url" content="https://etf.domc.me/" />
+    <meta property="og:image" content="https://etf.domc.me/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://etf.domc.me/og-image.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&display=swap" rel="stylesheet" />
-    <title>ETF Overlap Calculator</title>
+    <script type="application/ld+json">[{"@context": "https://schema.org", "@type": "WebApplication", "name": "ETF 重叠度 / ETF Overlap Calculator", "url": "https://etf.domc.me/", "applicationCategory": "FinanceApplication", "operatingSystem": "Any", "inLanguage": ["zh-CN", "en"], "isAccessibilityFree": true, "description": "Free ETF holdings overlap calculator for US and HK ETFs. 免费的 ETF 持仓重叠度计算器。", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "name": "domechn", "url": "https://github.com/domechn"}}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "什么是 ETF 重叠度？", "acceptedAnswer": {"@type": "Answer", "text": "重叠度衡量两只 ETF 持仓的相似程度：把两只基金共同持有的股票，各取权重较小的一边相加，结果越高，说明买这两只基金等于重复买了同一批股票。"}}, {"@type": "Question", "name": "为什么要看重叠度？", "acceptedAnswer": {"@type": "Answer", "text": "同时持有多只 ETF 看上去很分散，但如果它们的重仓股高度重合（比如 VOO 与 IVV 都跟踪标普 500），实际风险仍集中在同一批公司上，分散效果有限。"}}, {"@type": "Question", "name": "数据从哪里来，准确吗？", "acceptedAnswer": {"@type": "Answer", "text": "优先使用 iShares、Vanguard、SPDR、Invesco 官方每日更新的完整持仓文件；拿不到时用 SEC N-PORT 申报（按季度披露，可能滞后数月）；仍然拿不到才退回 Yahoo Finance 的前 10 大持仓，并在页面上明确标注。"}}]}]</script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Shown to crawlers and no-JS visitors; replaced once the app mounts. -->
+      <main style="max-width:720px;margin:48px auto;padding:0 16px;font-family:system-ui,sans-serif;line-height:1.6">
+        <h1>ETF 重叠度计算器 / ETF Overlap Calculator</h1>
+        <p>对比美股、港股 ETF 的完整持仓，看清买多只 ETF 到底有多少是重复的。Compare the full holdings of US and HK ETFs and see how much of your portfolio is the same stocks twice.</p>
+        <ul>
+          <li><a href="/?etfs=VOO,IVV">VOO vs IVV</a></li>
+          <li><a href="/?etfs=VOO,QQQ">VOO vs QQQ</a></li>
+          <li><a href="/?etfs=VTI,VOO">VTI vs VOO</a></li>
+          <li><a href="/?etfs=SCHD,VYM">SCHD vs VYM</a></li>
+          <li><a href="/?etfs=BND,AGG">BND vs AGG</a></li>
+        </ul>
+        <noscript><p>This tool needs JavaScript to run. 需要启用 JavaScript。</p></noscript>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

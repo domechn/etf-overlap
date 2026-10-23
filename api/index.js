@@ -2,7 +2,7 @@ import express from 'express';
 import YahooFinance from 'yahoo-finance2';
 import cors from 'cors';
 import { getFullHoldings } from './holdings/index.js';
-import { normTicker } from './holdings/util.js';
+import { cusipOf, normTicker } from './holdings/util.js';
 
 const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
@@ -59,7 +59,7 @@ const MAX_COMMON = 300;
 const keyOf = (h, cusipToTicker) => {
   const t = normTicker(h.symbol);
   if (t) return t;
-  const cusip = h.cusip || (/^US[0-9A-Z]{9}\d$/.test(h.isin || '') ? h.isin.slice(2, 11) : '');
+  const cusip = cusipOf(h);
   if (cusip) return cusipToTicker.get(cusip) || `CUSIP:${cusip}`;
   return h.name ? `NAME:${h.name.toUpperCase()}` : '';
 };
@@ -118,7 +118,7 @@ app.post('/api/analyze', async (req, res) => {
     for (const list of Object.values(data)) {
       for (const h of list) {
         const t = normTicker(h.symbol);
-        const c = h.cusip || (/^US[0-9A-Z]{9}\d$/.test(h.isin || '') ? h.isin.slice(2, 11) : '');
+        const c = cusipOf(h);
         if (t && c) cusipToTicker.set(c, t);
       }
     }

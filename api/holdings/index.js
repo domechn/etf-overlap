@@ -48,11 +48,11 @@ export async function getFullHoldings(symbol, { family, name, yahooHoldings = []
       const coverage = r.holdings.reduce((a, h) => a + (h.percent || 0), 0);
       // 数据源只返回了部分条目 (例如只有前 10)
       const truncated = r.total && r.holdings.length < r.total * 0.95;
-      const complete = !truncated && coverage >= MIN_COVERAGE && r.holdings.length > 10;
       let reason;
       if (truncated) reason = 'truncated';
       else if (coverage < MIN_COVERAGE) reason = 'low_coverage';
       else if (r.holdings.length <= 10) reason = 'few_holdings';
+      const complete = !reason;
       const value = { ...r, coverage, complete, ...(reason ? { reason } : {}) };
       // 不完整的结果先留着, 继续尝试下一个来源; 都不行再用它
       if (complete) { result = value; break; }

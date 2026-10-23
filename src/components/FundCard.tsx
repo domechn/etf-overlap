@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AnalysisResult } from '../api';
-import { fmtDate, int, pct, tidyName } from '../format';
-
-const norm = (s: string) => s.toUpperCase().replace(/[\s.\-/_]/g, '');
+import { fmtDate, int, normKey, pct, tidyName } from '../format';
 
 interface Props {
   ticker: string;
@@ -60,7 +58,7 @@ export const FundCard: React.FC<Props> = ({ ticker, data, span, sharedKeys, scal
           {shown.map((h, i) => (
             <li key={`${h.symbol}-${i}`}>
               <i
-                className={sharedKeys && (sharedKeys.has(norm(h.symbol)) || sharedKeys.has(norm(h.name))) ? 'shared' : undefined}
+                className={sharedKeys && (sharedKeys.has(normKey(h.symbol)) || sharedKeys.has(normKey(h.name))) ? 'shared' : undefined}
                 style={{ width: `calc((100% - 72px) * ${((h.percent || 0) / max).toFixed(4)})`, minWidth: 4 }}
               />
               <span className="nm" title={h.name}>{tidyName(h.name) || h.symbol}</span>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AnalysisResult } from '../api';
-import { daysBetween, fmtDate, int, pct } from '../format';
+import { daysBetween, fmtDate, int, pairsOf, pct } from '../format';
 
 interface Props {
   data: AnalysisResult;
@@ -43,8 +43,7 @@ export const PairDetail: React.FC<Props> = ({ data, pair, onSelect }) => {
       </div>
     ) : null;
 
-  const all: { i: number; j: number; w: number }[] = [];
-  data.overlap_matrix.forEach((r, i) => r.forEach((c, j) => j > i && all.push({ i, j, w: c.weight })));
+  const all = pairsOf(data.overlap_matrix);
   all.sort((x, y) => y.w - x.w);
 
   const gap = ma?.as_of && mb?.as_of ? daysBetween(ma.as_of, mb.as_of) : 0;

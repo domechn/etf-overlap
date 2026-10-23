@@ -10,7 +10,7 @@ import { FundCard } from './components/FundCard';
 import { Mark } from './components/Mark';
 import { analyzeETFs } from './api';
 import type { AnalysisResult } from './api';
-import { int, pct, rowSizes } from './format';
+import { int, normKey, pairsOf, pct, rowSizes } from './format';
 
 type Market = 'US' | 'HK';
 type Pair = { i: number; j: number };
@@ -24,17 +24,8 @@ const readUrl = (): string[] => {
 
 /** The pair with the highest overlap: the screen's finding. */
 const topPair = (r: AnalysisResult): Pair | null => {
-  let best: Pair | null = null;
-  let w = -1;
-  r.overlap_matrix.forEach((row, i) =>
-    row.forEach((c, j) => {
-      if (j > i && c.weight > w) {
-        w = c.weight;
-        best = { i, j };
-      }
-    }),
-  );
-  return best;
+  const pairs = pairsOf(r.overlap_matrix);
+  return pairs.length ? pairs.reduce((m, p) => (p.w > m.w ? p : m)) : null;
 };
 
 function App() {
@@ -47,10 +38,8 @@ function App() {
   const [failed, setFailed] = useState(false);
   const reqId = useRef(0);
 
-  const toggleLanguage = () => {
-    const current = i18n.resolvedLanguage || i18n.language;
-    i18n.changeLanguage(current.startsWith('en') ? 'zh' : 'en');
-  };
+  const isEn = (i18n.resolvedLanguage || i18n.language).startsWith('en');
+  const toggleLanguage = () => i18n.changeLanguage(isEn ? 'zh' : 'en');
 
   const run = useCallback(async (tickers: string[]) => {
     if (tickers.length < 2) return;
@@ -105,8 +94,7 @@ function App() {
 
   const kpis = useMemo(() => {
     if (!result) return null;
-    const pairs: { i: number; j: number; w: number }[] = [];
-    result.overlap_matrix.forEach((row, i) => row.forEach((c, j) => j > i && pairs.push({ i, j, w: c.weight })));
+    const pairs = pairsOf(result.overlap_matrix);
     if (!pairs.length) return null;
     const hi = pairs.reduce((m, p) => (p.w > m.w ? p : m));
     const lo = pairs.reduce((m, p) => (p.w < m.w ? p : m));
@@ -138,7 +126,7 @@ function App() {
         </a>
         <div className="spacer" />
         <button className="rail-btn lang" onClick={toggleLanguage} aria-label={t('nav.language')} title={t('nav.language')}>
-          {(i18n.resolvedLanguage || i18n.language).startsWith('en') ? '中' : 'EN'}
+          {isEn ? '中' : 'EN'}
         </button>
         <a className="rail-btn" href="https://github.com/domechn/etf-cal" target="_blank" rel="noopener noreferrer" aria-label={t('nav.github')} title={t('nav.github')}>
           <Github size={18} />
@@ -179,14 +167,12 @@ function App() {
                 </button>
               </span>
             ))}
-            {selected.length > 0 && !(result && !loading && selected.join() === result.tickers.join()) && (
+            {!(result && !loading && selected.join() === result.tickers.join()) && (
               <span className="hint">
                 {need > 0 ? t(need === 2 ? 'setup.need_more_zero' : 'setup.need_more_one') : t('setup.ready', { count: selected.length })}
               </span>
             )}
-            {selected.length > 0 && (
-              <button className="btn text" onClick={clear}>{t('setup.clear')}</button>
-            )}
+            <button className="btn text" onClick={clear}>{t('setup.clear')}</button>
           </div>}
         </section>
 
@@ -268,9 +254,9 @@ function App() {
                 const spans: number[] = [];
                 sizes.forEach((s) => { for (let k = 0; k < s; k++) spans.push(6 / s); });
                 const cell = result.overlap_matrix[pair.i][pair.j];
-                const scaleMax = Math.max(0, ...result.tickers.flatMap((tk) => (result.holdings[tk] ?? []).slice(0, 10).map((h) => h.percent || 0)), ...result.tickers.map((tk) => result.holdings[tk]?.[0]?.percent ?? 0));
+                const scaleMax = Math.max(0, ...result.tickers.flatMap((tk) => (result.holdings[tk] ?? []).slice(0, 10).map((h) => h.percent || 0)));
                 const keys = new Set<string>();
-                cell.common.forEach((c) => { keys.add(c.symbol.toUpperCase().replace(/[\s.\-/_]/g, '')); keys.add(c.name.toUpperCase().replace(/[\s.\-/_]/g, '')); });
+                cell.common.forEach((c) => { keys.add(normKey(c.symbol)); keys.add(normKey(c.name)); });
                 return result.tickers.map((tk, idx) => (
                   <FundCard key={tk} ticker={tk} data={result} span={spans[idx]} scaleMax={scaleMax} sharedKeys={idx === pair.i || idx === pair.j ? keys : undefined} />
                 ));

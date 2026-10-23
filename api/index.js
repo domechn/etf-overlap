@@ -109,6 +109,7 @@ app.post('/api/analyze', async (req, res) => {
         total: full.total || full.holdings.length,
         coverage: full.coverage,
         reason: full.reason || '',
+        errors: full.complete ? [] : (full.errors || []).map((e) => String(e).slice(0, 300)),
       };
     }));
 

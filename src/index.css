@@ -295,3 +295,5 @@ button:disabled { cursor: not-allowed; }
 .example b { font-weight: 500; font-size: 16px; }
 .example span { color: var(--muted); }
 @media (max-width: 760px) { .examples-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.fund-meta .why { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

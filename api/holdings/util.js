@@ -2,13 +2,29 @@ const BROWSER_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 export const SEC_UA = process.env.SEC_USER_AGENT || 'etf-cal domdoumc@gmail.com';
 
-export async function httpGet(url, { headers = {}, as = 'text', timeout = 20000 } = {}) {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'en-US,en;q=0.9', ...headers },
-    redirect: 'follow',
-    signal: AbortSignal.timeout(timeout),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+export async function httpGet(url, { headers = {}, as = 'text', timeout = 20000, retries = 2 } = {}) {
+  let res;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      res = await fetch(url, {
+        headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'en-US,en;q=0.9', ...headers },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(timeout),
+      });
+    } catch (e) {
+      if (attempt < retries) { await sleep(400 * (attempt + 1)); continue; }
+      throw new Error(`${e.cause?.code || e.name}: ${e.message} (${new URL(url).host})`);
+    }
+    // 403/429/5xx from SEC are usually rate limiting; a short wait often clears them
+    if (!res.ok && [403, 429, 500, 502, 503].includes(res.status) && attempt < retries) {
+      await sleep(600 * (attempt + 1));
+      continue;
+    }
+    break;
+  }
+  if (!res.ok) throw new Error(`HTTP ${res.status} (${new URL(url).host}${new URL(url).pathname})`);
   if (as === 'json') return res.json();
   if (as === 'buffer') return Buffer.from(await res.arrayBuffer());
   return res.text();

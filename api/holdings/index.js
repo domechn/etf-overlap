@@ -75,6 +75,8 @@ export async function getFullHoldings(symbol, { family, name, yahooHoldings = []
     };
   }
   if (errors.length) console.warn(`[holdings] ${key}: ${errors.join(' | ')}`);
-  cache.set(key, { at: Date.now(), value: result });
+  result = { ...result, errors };
+  // 失败结果只缓存很短时间, 避免一次限流把整个实例 6 小时都拖成不完整
+  cache.set(key, { at: result.complete ? Date.now() : Date.now() - TTL + 60_000, value: result });
   return result;
 }

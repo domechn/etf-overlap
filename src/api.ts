@@ -34,6 +34,7 @@ export interface HoldingsMeta {
   total: number;
   coverage: number;
   reason: string;
+  errors?: string[];
 }
 
 export interface AnalysisResult {

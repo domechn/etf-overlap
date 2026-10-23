@@ -47,6 +47,9 @@ export const FundCard: React.FC<Props> = ({ ticker, data, span, sharedKeys, scal
             </span>
           )}
           {!complete && meta.reason && <span className="reason">{t(`reason.${meta.reason}`)}</span>}
+          {!complete && meta.errors && meta.errors.length > 0 && (
+            <span className="why" title={meta.errors.join('\n')}>{meta.errors[0]}</span>
+          )}
           {meta.source === 'sec' ? <span>{t('funds.sec_note')}</span> : complete && <span>{t('funds.issuer_note')}</span>}
         </div>
       )}

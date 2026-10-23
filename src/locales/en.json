@@ -1,9 +1,12 @@
 {
   "title": "ETF overlap",
   "meta": {
-    "title": "ETF Overlap Calculator | US & HK ETF holdings compared",
-    "description": "Free ETF overlap analysis. Compare the full holdings of US and HK ETFs and see how much of your portfolio is the same stocks twice.",
-    "keywords": "ETF, Overlap, Holdings, Portfolio, US Stocks, HK Stocks, Diversification"
+    "title": "ETF Overlap Calculator: compare full holdings of US & HK ETFs | ETF overlap",
+    "description": "Free ETF overlap calculator. Compare VOO, IVV, QQQ, SCHD and other US and HK ETFs: full-holdings overlap matrix, shared positions and data sources, so you stop buying the same stocks twice.",
+    "keywords": "ETF overlap, ETF overlap calculator, compare ETFs, VOO vs IVV, ETF holdings, portfolio diversification, US ETFs, HK ETFs",
+    "result_title": "{{names}} holdings overlap {{pct}} | ETF overlap",
+    "result_desc": "{{names}} overlap by {{pct}}. See the shared positions, each fund's full holdings and where the data comes from.",
+    "site_name": "ETF overlap"
   },
   "nav": {
     "language": "Switch language",
@@ -43,7 +46,8 @@
       {
         "name": "Two US aggregate bond funds"
       }
-    ]
+    ],
+    "popular": "Popular comparisons"
   },
   "finding": {
     "twin": "{{a}} and {{b}} overlap by {{pct}}: close to the same portfolio.",
@@ -129,5 +133,22 @@
   },
   "footer": {
     "note": "Data from issuers' official holdings files and SEC N-PORT; falls back to the Yahoo Finance top 10 (flagged) when full holdings are unavailable."
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "What is ETF overlap?",
+        "a": "Overlap measures how similar two ETFs are: for every stock both funds hold, take the smaller of the two weights and add them up. The higher the number, the more you are buying the same stocks twice."
+      },
+      {
+        "q": "Why does overlap matter?",
+        "a": "Owning several ETFs looks diversified, but if their top holdings coincide (for example VOO and IVV both track the S&P 500), your risk is still concentrated in the same companies."
+      },
+      {
+        "q": "Where does the data come from, and is it accurate?",
+        "a": "Issuers' official daily holdings files (iShares, Vanguard, SPDR, Invesco) first; then SEC N-PORT filings (quarterly, so they can lag by months); only if neither is available does the tool fall back to the Yahoo Finance top 10, and it flags that clearly."
+      }
+    ]
   }
 }

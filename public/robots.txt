@@ -1,3 +1,5 @@
 User-agent: *
 Allow: /
-Sitemap: https://your-domain.com/sitemap.xml
+Disallow: /api/
+
+Sitemap: https://etf.domc.me/sitemap.xml

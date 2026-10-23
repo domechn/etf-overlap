@@ -297,3 +297,17 @@ button:disabled { cursor: not-allowed; }
 @media (max-width: 760px) { .examples-grid { grid-template-columns: minmax(0, 1fr); } }
 
 .fund-meta .why { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* faq (empty state): real text for readers and crawlers */
+.faq { margin-top: 28px; }
+.faq h2 { font-size: 16px; font-weight: 500; line-height: 24px; margin-bottom: 12px; }
+.faq-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap); }
+.faq-grid > div { padding-top: 12px; border-top: 1px solid var(--rule); }
+.faq-grid h3 { font-size: 14px; font-weight: 500; }
+.faq-grid p { margin-top: 4px; color: var(--muted); max-width: none; }
+a.example { text-decoration: none; color: inherit; }
+@media (max-width: 1100px) { .faq-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.popular { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.popular a { padding: 6px 12px; border: 1px solid var(--control); border-radius: var(--radius-control); font-weight: 500; text-decoration: none; color: var(--text); transition: border-color 150ms; }
+.popular a:hover { border-color: var(--text); }

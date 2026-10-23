@@ -1,71 +1,133 @@
 {
-  "title": "ETF 成分股重叠度分析",
+  "title": "ETF 重叠度",
   "meta": {
-    "title": "ETF 成分股重叠度分析计算器 | 美股 & 港股 ETF Overlap Tool",
-    "description": "免费在线 ETF 重叠度分析工具。比较美股和港股 ETF 的持仓重叠情况，帮助您优化投资组合，避免重复投资。支持 VOO, QQQ, SCHD 等热门 ETF。",
-    "keywords": "ETF, 重叠度, 成分股, 投资组合, 美股, 港股, 重复投资, VOO, QQQ, 股票分析"
+    "title": "ETF 重叠度计算器 | 美股与港股 ETF 持仓对比",
+    "description": "免费的 ETF 持仓重叠分析工具。对比美股、港股 ETF 的完整持仓，看清组合里到底有多少是重复的。",
+    "keywords": "ETF, 重叠度, 持仓, 组合, 美股, 港股, 分散化"
   },
-  "step1": "第一步：选择市场",
-  "step2": "第二步：添加 ETF",
+  "nav": {
+    "language": "切换语言",
+    "github": "GitHub 仓库",
+    "home": "ETF 重叠度"
+  },
   "market": {
-    "us": "美股 (US)",
-    "hk": "港股 (HK)"
+    "label": "市场",
+    "us": "美股",
+    "hk": "港股"
   },
-  "selected": "已选 ETF",
-  "clear": "清空",
-  "empty_list": "请添加 ETF",
-  "search_placeholder": "搜索 {{market}} ETF (例如 {{example}})...",
-  "analyze_btn": "开始分析",
-  "analyzing": "分析中...",
-  "error": {
-    "min_two": "请至少选择两个 ETF 进行比较",
-    "failed": "分析失败，请检查网络或稍后重试"
+  "setup": {
+    "funds": "对比的基金",
+    "search_placeholder": "搜索{{market}} ETF，例如 {{example}}",
+    "compare": "计算重叠度",
+    "comparing": "计算中…",
+    "clear": "清空",
+    "remove": "移除 {{ticker}}",
+    "need_more_zero": "至少添加两只 ETF 才能对比",
+    "need_more_one": "再添加一只 ETF 就可以对比",
+    "ready": "已选 {{count}} 只，可以对比",
+    "no_results": "没有找到匹配的 ETF",
+    "searching": "搜索中…"
   },
-  "ready_state": {
-    "title": "准备就绪",
-    "desc": "请在左侧选择市场并添加至少两个 ETF，点击“开始分析”查看它们的持仓重叠情况。",
-    "note": "数据优先取自发行商官方持仓文件，其次 SEC N-PORT；都拿不到时仅显示前 10 大持仓，并会在结果中标注。"
+  "empty": {
+    "subline": "添加两只以上 ETF，看它们的持仓有多少是同一批股票。",
+    "title": "选两只以上的 ETF 开始对比",
+    "desc": "每一对基金的重叠度 = 两只基金共同持仓里，较小那一边权重的总和。数据优先取自发行商官方持仓文件，其次是 SEC N-PORT。",
+    "examples": "或者从一个例子开始",
+    "ex": [
+      {
+        "name": "两只标普 500 基金"
+      },
+      {
+        "name": "标普 500、纳指 100 与红利基金"
+      },
+      {
+        "name": "两只美国综合债券基金"
+      }
+    ]
   },
-  "result": {
-    "title": "分析结果",
-    "desc": "比较了 {{tickers}} 的成分股重叠情况。",
-    "note": "* 数据来自发行商官方持仓文件 / SEC N-PORT；无法获取完整持仓时回退到 Yahoo Finance 前 10 大并标注。",
-    "holdings_overview": "持仓概览",
-    "no_data": "暂无数据",
-    "incomplete_banner": "以下 ETF 未能获取完整持仓，重叠度会被低估：{{tickers}}",
-    "badge_complete": "完整持仓",
-    "badge_partial": "仅部分持仓",
-    "as_of": "截至 {{date}}",
-    "sec_note": "SEC 季度披露，数据可能滞后数月",
-    "count_info": "共 {{count}} 条，权重合计 {{coverage}}%",
-    "truncated_list": "仅显示前 {{n}} 条，共 {{total}} 条",
-    "reason": {
-      "top10_only": "完整持仓暂不可得，仅有 Yahoo 提供的前 10 大持仓",
-      "truncated": "数据源只返回了部分持仓",
-      "low_coverage": "持仓权重合计偏低，可能缺少部分资产",
-      "few_holdings": "数据源只提供了很少的持仓"
-    },
-    "source": {
-      "ishares": "iShares 官方",
-      "vanguard": "Vanguard 官方",
-      "spdr": "SPDR 官方",
-      "invesco": "Invesco 官方",
-      "sec": "SEC N-PORT",
-      "yahoo": "Yahoo Finance"
-    }
+  "finding": {
+    "twin": "{{a}} 与 {{b}} 的持仓重叠 {{pct}}，几乎是同一个组合。",
+    "heavy": "{{a}} 与 {{b}} 的持仓重叠 {{pct}}，一起买的分散效果有限。",
+    "partial": "{{a}} 与 {{b}} 的持仓重叠 {{pct}}，有一部分是重复的。",
+    "light": "{{a}} 与 {{b}} 的持仓重叠只有 {{pct}}，基本互补。",
+    "single": "至少需要两只 ETF 才能比较。"
+  },
+  "kpi": {
+    "highest": "最高重叠度",
+    "lowest": "最低重叠度",
+    "shared": "共同持仓",
+    "shared_sub": "{{a}} 与 {{b}} 之间",
+    "funds": "对比的基金",
+    "full": "{{full}} 只基金有完整持仓",
+    "unit_positions": "只",
+    "tied": "{{n}} 组并列"
+  },
+  "notice": {
+    "partial": "{{tickers}} 未能取得完整持仓，涉及它们的重叠度会被低估。"
   },
   "matrix": {
     "title": "重叠度矩阵",
-    "click_hint": "点击查看详情",
-    "modal": {
-      "title": "重叠分析详情",
-      "weight": "重叠权重",
-      "common_stocks": "共同成分股",
-      "count_unit": "只",
-      "symbol": "代码",
-      "name": "名称",
-      "weight_in": "{{ticker}} 权重",
-      "no_common": "无共同成分股"
-    }
+    "desc": "点一个格子，下方显示这一对基金的共同持仓。",
+    "self": "—",
+    "select": "查看 {{a}} 与 {{b}} 的共同持仓"
+  },
+  "pair": {
+    "title": "{{a}} 与 {{b}}",
+    "desc": "条形按持仓数量计算：各基金有多少只持仓也在另一只里。下方是两边数据的来源和日期。",
+    "positions_shared": "{{shared}} / {{total}} 只也在 {{other}} 里",
+    "drift": "{{a}} 的数据截至 {{da}}，{{b}} 截至 {{db}}，相差 {{days}} 天，权重可能已有漂移。",
+    "all": "所有组合"
+  },
+  "shared": {
+    "title": "共同持仓",
+    "desc": "按两边较小的权重从大到小排列。",
+    "holding": "持仓",
+    "weight_in": "{{ticker}} 权重",
+    "overlap": "重叠权重",
+    "show_all": "显示全部 {{n}} 行",
+    "show_less": "收起",
+    "none": "这两只基金没有共同持仓。",
+    "none_partial": "在已取得的持仓里没有共同持仓，但至少一方的数据不完整。",
+    "bar": "重叠权重占比",
+    "show_part": "显示 {{n}} / {{total}} 行"
+  },
+  "funds": {
+    "title": "各基金持仓",
+    "desc": "每只基金的数据来源、截止日期和完整程度。",
+    "complete": "完整持仓",
+    "partial": "部分持仓",
+    "positions": "{{n}} 只持仓",
+    "coverage": "权重合计 {{pct}}",
+    "as_of": "截至 {{date}}",
+    "no_date": "日期未知",
+    "sec_note": "SEC 按季度披露，数据可能滞后数月。",
+    "show_all": "显示全部 {{n}} 行",
+    "show_less": "收起",
+    "no_data": "暂无数据",
+    "issuer_note": "发行商每日持仓文件。",
+    "legend": "{{a}} 与 {{b}} 的列表里，蓝色条是两只基金都持有的仓位；条长按所有基金里最大的权重缩放。",
+    "show_part": "显示 {{n}} / {{total}} 行"
+  },
+  "reason": {
+    "top10_only": "完整持仓暂不可得，这里只有 Yahoo 提供的前 10 大持仓。",
+    "truncated": "数据源只返回了部分持仓。",
+    "low_coverage": "持仓权重合计偏低，可能缺少部分资产。",
+    "few_holdings": "数据源只提供了很少的持仓。"
+  },
+  "source": {
+    "ishares": "iShares 官方",
+    "vanguard": "Vanguard 官方",
+    "spdr": "SPDR 官方",
+    "invesco": "Invesco 官方",
+    "sec": "SEC N-PORT",
+    "yahoo": "Yahoo Finance"
+  },
+  "error": {
+    "min_two": "至少选择两只 ETF 才能对比",
+    "failed": "没能完成对比。请检查网络后重试。",
+    "retry": "重试"
+  },
+  "footer": {
+    "note": "数据来自发行商官方持仓文件和 SEC N-PORT；无法获取完整持仓时，回退到 Yahoo Finance 的前 10 大并标注。"
   }
 }

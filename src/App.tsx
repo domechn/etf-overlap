@@ -1,260 +1,304 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
+import { AlertTriangle, Github, X } from 'lucide-react';
 import { SearchBox } from './components/SearchBox';
 import { OverlapMatrix } from './components/OverlapMatrix';
+import { PairDetail } from './components/PairDetail';
+import { SharedTable } from './components/SharedTable';
+import { FundCard } from './components/FundCard';
+import { Mark } from './components/Mark';
 import { analyzeETFs } from './api';
 import type { AnalysisResult } from './api';
-import { Github, Trash2, TrendingUp, Languages, AlertTriangle } from 'lucide-react';
+import { int, pct, rowSizes } from './format';
+
+type Market = 'US' | 'HK';
+type Pair = { i: number; j: number };
+
+const EXAMPLES: string[][] = [['VOO', 'IVV'], ['SPY', 'QQQ', 'SCHD'], ['BND', 'AGG']];
+
+const readUrl = (): string[] => {
+  const raw = new URLSearchParams(window.location.search).get('etfs') ?? '';
+  return Array.from(new Set(raw.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean)));
+};
+
+/** The pair with the highest overlap: the screen's finding. */
+const topPair = (r: AnalysisResult): Pair | null => {
+  let best: Pair | null = null;
+  let w = -1;
+  r.overlap_matrix.forEach((row, i) =>
+    row.forEach((c, j) => {
+      if (j > i && c.weight > w) {
+        w = c.weight;
+        best = { i, j };
+      }
+    }),
+  );
+  return best;
+};
 
 function App() {
   const { t, i18n } = useTranslation();
-  const [market, setMarket] = useState<'US' | 'HK'>('US');
-  const [selectedETFs, setSelectedETFs] = useState<string[]>([]);
+  const [market, setMarket] = useState<Market>('US');
+  const [selected, setSelected] = useState<string[]>(readUrl);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [pair, setPair] = useState<Pair>({ i: 0, j: 1 });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [failed, setFailed] = useState(false);
+  const reqId = useRef(0);
 
   const toggleLanguage = () => {
-    // Check current resolved language (might be 'zh-CN' or similar from detector)
-    const currentLang = i18n.resolvedLanguage || i18n.language;
-    const newLang = currentLang.startsWith('en') ? 'zh' : 'en';
-    i18n.changeLanguage(newLang);
+    const current = i18n.resolvedLanguage || i18n.language;
+    i18n.changeLanguage(current.startsWith('en') ? 'zh' : 'en');
   };
 
-  const handleAdd = (ticker: string) => {
-    if (!selectedETFs.includes(ticker)) {
-      setSelectedETFs([...selectedETFs, ticker]);
-    }
-  };
-
-  const handleRemove = (ticker: string) => {
-    setSelectedETFs(selectedETFs.filter(t => t !== ticker));
-  };
-
-  const handleAnalyze = async () => {
-    if (selectedETFs.length < 2) {
-      setError(t('error.min_two'));
-      return;
-    }
+  const run = useCallback(async (tickers: string[]) => {
+    if (tickers.length < 2) return;
+    const id = ++reqId.current;
     setLoading(true);
-    setError('');
+    setFailed(false);
     try {
-      const data = await analyzeETFs(selectedETFs, market);
+      const data = await analyzeETFs(tickers, 'US');
+      if (id !== reqId.current) return;
       setResult(data);
+      setPair(topPair(data) ?? { i: 0, j: 1 });
+      window.history.replaceState(null, '', `?etfs=${tickers.join(',')}`);
     } catch (e) {
-      setError(t('error.failed'));
+      if (id !== reqId.current) return;
       console.error(e);
+      setFailed(true);
     } finally {
-      setLoading(false);
+      if (id === reqId.current) setLoading(false);
     }
+  }, []);
+
+  // A shared link (?etfs=VOO,IVV) runs straight away.
+  useEffect(() => {
+    const fromUrl = readUrl();
+    if (fromUrl.length >= 2) void run(fromUrl);
+  }, [run]);
+
+  const add = (tk: string) => setSelected((s) => (s.includes(tk) ? s : [...s, tk]));
+  const remove = (tk: string) => setSelected((s) => s.filter((x) => x !== tk));
+  const tryExample = (list: string[]) => {
+    setSelected(list);
+    void run(list);
   };
+  const clear = () => {
+    setSelected([]);
+    setResult(null);
+    setFailed(false);
+    reqId.current++;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('etfs');
+    window.history.replaceState(null, '', url);
+  };
+
+  const finding = useMemo(() => {
+    if (!result) return null;
+    const p = topPair(result);
+    if (!p) return t('finding.single');
+    const w = result.overlap_matrix[p.i][p.j].weight;
+    const key = w >= 0.8 ? 'twin' : w >= 0.4 ? 'heavy' : w >= 0.1 ? 'partial' : 'light';
+    return t(`finding.${key}`, { a: result.tickers[p.i], b: result.tickers[p.j], pct: pct(w) });
+  }, [result, t]);
+
+  const kpis = useMemo(() => {
+    if (!result) return null;
+    const pairs: { i: number; j: number; w: number }[] = [];
+    result.overlap_matrix.forEach((row, i) => row.forEach((c, j) => j > i && pairs.push({ i, j, w: c.weight })));
+    if (!pairs.length) return null;
+    const hi = pairs.reduce((m, p) => (p.w > m.w ? p : m));
+    const lo = pairs.reduce((m, p) => (p.w < m.w ? p : m));
+    const full = result.tickers.filter((tk) => result.holdings_meta[tk]?.complete).length;
+    const tied = pairs.filter((p) => p.w.toFixed(3) === lo.w.toFixed(3)).length;
+    return { hi, lo, full, tied, showLow: pairs.length > 1 };
+  }, [result]);
+
+  const incomplete = result ? result.tickers.filter((tk) => !result.holdings_meta[tk]?.complete) : [];
+  const need = 2 - selected.length;
+  const canRun = selected.length >= 2 && !loading;
+  const tick = (i: number) => result?.tickers[i] ?? '';
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="shell">
       <Helmet>
+        <html lang={i18n.language.startsWith('en') ? 'en' : 'zh-CN'} />
         <title>{t('meta.title')}</title>
         <meta name="description" content={t('meta.description')} />
         <meta name="keywords" content={t('meta.keywords')} />
-        
-        {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:title" content={t('meta.title')} />
         <meta property="og:description" content={t('meta.description')} />
-        <meta property="og:image" content="https://your-domain.com/og-image.jpg" /> {/* Replace with actual image URL */}
-        
-        {/* Twitter */}
-        <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:title" content={t('meta.title')} />
-        <meta property="twitter:description" content={t('meta.description')} />
       </Helmet>
-      <header className="bg-white border-b shadow-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <TrendingUp className="text-blue-600 w-8 h-8 shrink-0" />
-            <h1
-              className="flex-1 min-w-0 truncate text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent sm:text-xl"
-              title={t('title')}
-            >
-              {t('title')}
-            </h1>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-gray-500 shrink-0 sm:gap-4">
-            <button 
-              onClick={toggleLanguage}
-              className="flex items-center gap-1 hover:text-gray-900 transition-colors whitespace-nowrap"
-              title="Switch Language"
-            >
-              <Languages className="w-4 h-4" />
-              <span className="uppercase font-medium">{i18n.language}</span>
-            </button>
-            <span className="hidden sm:inline">Data: issuers · SEC · Yahoo</span>
-            <a
-              href="https://github.com/domechn/etf-cal"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-gray-900 transition-colors"
-              aria-label="GitHub Repository"
-            >
-              <Github className="w-5 h-5" />
-            </a>
+
+      <nav className="rail" aria-label="Site">
+        <a className="mark" href="/" aria-label={t('nav.home')} title={t('nav.home')}>
+          <Mark size={26} />
+        </a>
+        <div className="spacer" />
+        <button className="rail-btn lang" onClick={toggleLanguage} aria-label={t('nav.language')} title={t('nav.language')}>
+          {(i18n.resolvedLanguage || i18n.language).startsWith('en') ? '中' : 'EN'}
+        </button>
+        <a className="rail-btn" href="https://github.com/domechn/etf-cal" target="_blank" rel="noopener noreferrer" aria-label={t('nav.github')} title={t('nav.github')}>
+          <Github size={18} />
+        </a>
+      </nav>
+
+      <main className="canvas">
+        <div className="title-row">
+          <div>
+            <h1>{t('title')}</h1>
+            <p className={`sub${finding ? '' : ' quiet'}`} aria-live="polite">{finding ?? t('empty.subline')}</p>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Sidebar / Control Panel */}
-          <div className="md:col-span-1 space-y-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border">
-              <h2 className="font-semibold mb-4 text-gray-700">{t('step1')}</h2>
-              <div className="flex p-1 bg-gray-100 rounded-lg">
-                <button
-                  onClick={() => setMarket('US')}
-                  className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${market === 'US' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  {t('market.us')}
+        <section className="setup" aria-label={t('setup.funds')}>
+          <div className="setup-row">
+            <SearchBox onAdd={add} market={market} />
+            <div className="segmented" role="group" aria-label={t('market.label')}>
+              {(['US', 'HK'] as Market[]).map((m) => (
+                <button key={m} aria-pressed={market === m} onClick={() => setMarket(m)}>
+                  {t(`market.${m.toLowerCase()}`)}
                 </button>
-                <button
-                  onClick={() => setMarket('HK')}
-                  className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${market === 'HK' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  {t('market.hk')}
-                </button>
-              </div>
+              ))}
             </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border">
-              <h2 className="font-semibold mb-4 text-gray-700">{t('step2')}</h2>
-              <SearchBox onAdd={handleAdd} market={market} />
-              
-              <div className="mt-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-500">{t('selected')} ({selectedETFs.length})</span>
-                  {selectedETFs.length > 0 && (
-                    <button onClick={() => setSelectedETFs([])} className="text-xs text-red-500 hover:underline">
-                      {t('clear')}
-                    </button>
-                  )}
-                </div>
-                
-                {selectedETFs.length === 0 ? (
-                  <div className="text-center py-8 text-gray-400 bg-gray-50 rounded-lg border border-dashed">
-                    {t('empty_list')}
-                  </div>
-                ) : (
-                  <ul className="space-y-2">
-                    {selectedETFs.map(t => (
-                      <li key={t} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg group hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-200 transition-all">
-                        <span className="font-mono font-medium">{t}</span>
-                        <button onClick={() => handleRemove(t)} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-
-            <button
-              onClick={handleAnalyze}
-              disabled={loading || selectedETFs.length < 2}
-              className={`w-full py-3 rounded-xl font-bold text-white shadow-lg transition-all transform active:scale-95 ${
-                loading || selectedETFs.length < 2 
-                  ? 'bg-gray-300 cursor-not-allowed shadow-none' 
-                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-blue-200'
-              }`}
-            >
-              {loading ? t('analyzing') : t('analyze_btn')}
+            <button className="btn primary" disabled={!canRun} onClick={() => run(selected)}>
+              {loading ? t('setup.comparing') : t('setup.compare')}
             </button>
-            {error && <p className="text-red-500 text-sm mt-2 text-center">{error}</p>}
           </div>
+          {selected.length > 0 && <div className="chips">
+            {selected.map((tk) => (
+              <span className="chip" key={tk}>
+                <b>{tk}</b>
+                {result?.etf_info[tk]?.shortname && result.etf_info[tk].shortname !== tk && (
+                  <span className="nm">{result.etf_info[tk].shortname}</span>
+                )}
+                <button onClick={() => remove(tk)} aria-label={t('setup.remove', { ticker: tk })}>
+                  <X size={14} />
+                </button>
+              </span>
+            ))}
+            {selected.length > 0 && !(result && !loading && selected.join() === result.tickers.join()) && (
+              <span className="hint">
+                {need > 0 ? t(need === 2 ? 'setup.need_more_zero' : 'setup.need_more_one') : t('setup.ready', { count: selected.length })}
+              </span>
+            )}
+            {selected.length > 0 && (
+              <button className="btn text" onClick={clear}>{t('setup.clear')}</button>
+            )}
+          </div>}
+        </section>
 
-          {/* Main Content Area */}
-          <div className="md:col-span-2">
-            {!result ? (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl shadow-sm border p-12 text-center min-h-[400px]">
-                <TrendingUp className="w-16 h-16 mb-4 text-gray-200" />
-                <h3 className="text-lg font-medium text-gray-600 mb-2">{t('ready_state.title')}</h3>
-                <p className="max-w-xs mx-auto">{t('ready_state.desc')}</p>
-                <p className="mt-4 text-xs text-orange-400">{t('ready_state.note')}</p>
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl shadow-sm border p-6 min-h-[400px]">
-                 <div className="mb-6 pb-6 border-b">
-                   <h2 className="text-2xl font-bold mb-2">{t('result.title')}</h2>
-                   <p className="text-gray-500 text-sm">
-                     {t('result.desc', { tickers: result.tickers.join(', ') })}
-                     <br/>
-                     <span className="text-xs text-orange-500">
-                       {t('result.note')}
-                     </span>
-                   </p>
-                 </div>
-                 
-                 {(() => {
-                   const bad = result.tickers.filter(k => result.holdings_meta?.[k] && !result.holdings_meta[k].complete);
-                   return bad.length > 0 ? (
-                     <div className="mb-4 flex gap-2 rounded-lg border border-orange-300 bg-orange-50 p-3 text-sm text-orange-700">
-                       <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                       <span>{t('result.incomplete_banner', { tickers: bad.join(', ') })}</span>
-                     </div>
-                   ) : null;
-                 })()}
+        {failed && (
+          <div className="err" role="alert">
+            <AlertTriangle size={18} />
+            <span>{t('error.failed')}</span>
+            <button className="btn text" onClick={() => run(selected)}>{t('error.retry')}</button>
+          </div>
+        )}
 
-                 <OverlapMatrix data={result} />
-                 
-                 {/* Raw Holdings List */}
-                 <div className="mt-12">
-                    <h3 className="text-lg font-bold mb-4">{t('result.holdings_overview')}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {result.tickers.map(ticker => {
-                      const meta = result.holdings_meta?.[ticker];
-                      const list = result.holdings[ticker];
-                      const MAX_ROWS = 200;
-                      return (
-                      <div key={ticker} className={`border rounded-lg overflow-hidden ${meta && !meta.complete ? 'border-orange-300' : ''}`}>
-                        <div className="bg-gray-50 p-3 border-b font-bold flex flex-wrap items-center justify-between gap-2">
-                          <span>{ticker}</span>
-                          <span className="text-xs font-normal text-gray-500 self-center truncate max-w-[110px] sm:max-w-[150px]">{result.etf_info[ticker]?.shortname}</span>
-                        </div>
-                        {meta && (
-                          <div className={`px-3 py-2 text-xs border-b ${meta.complete ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'}`}>
-                            <div className="flex flex-wrap items-center gap-x-2">
-                              <span className="font-semibold">{meta.complete ? t('result.badge_complete') : t('result.badge_partial')}</span>
-                              <span>· {t(`result.source.${meta.source}`)}</span>
-                              {meta.as_of && <span>· {t('result.as_of', { date: meta.as_of })}</span>}
-                            </div>
-                            {!meta.complete && meta.reason && <div>{t(`result.reason.${meta.reason}`)}</div>}
-                            {meta.source === 'sec' && <div>{t('result.sec_note')}</div>}
-                            {meta.source !== 'yahoo' && <div className="opacity-75">{t('result.count_info', { count: meta.count, coverage: (meta.coverage * 100).toFixed(1) })}</div>}
-                          </div>
-                        )}
-                        <ul className="max-h-60 overflow-y-auto divide-y">
-                          {list.length > 0 ? (
-                            list.slice(0, MAX_ROWS).map((h, i) => (
-                              <li key={i} className="p-2 text-sm flex justify-between hover:bg-gray-50">
-                                <span className="truncate flex-1 mr-2" title={h.name}>{h.name}</span>
-                                <span className="font-mono text-gray-600">{(h.percent * 100).toFixed(2)}%</span>
-                              </li>
-                            ))
-                          ) : (
-                            <li className="p-4 text-center text-gray-400 text-sm">{t('result.no_data')}</li>
-                          )}
-                          {list.length > MAX_ROWS && (
-                            <li className="p-2 text-xs text-center text-gray-400">{t('result.truncated_list', { n: MAX_ROWS, total: list.length })}</li>
-                          )}
-                        </ul>
-                      </div>
-                    );})}
+        {loading && !result && <Skeleton />}
+
+        {!result && !loading && !failed && (
+          <div className="frame-empty">
+            <h2>{t('empty.title')}</h2>
+            <p>{t('empty.desc')}</p>
+            <p className="ex-label">{t('empty.examples')}</p>
+            <div className="examples-grid">
+              {EXAMPLES.map((ex, k) => (
+                <button key={ex.join()} className="example" onClick={() => tryExample(ex)}>
+                  <b>{ex.join(' + ')}</b>
+                  <span>{t(`empty.ex.${k}.name`)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {result && (
+          <div style={{ opacity: loading ? 0.55 : 1, transition: 'opacity 150ms' }} aria-busy={loading}>
+            {kpis && (
+              <div className="kpis">
+                <div className="kpi lead">
+                  <div className="label">{t('kpi.highest')}</div>
+                  <div className="value num">{pct(kpis.hi.w)}</div>
+                  <div className="meta">{tick(kpis.hi.i)} · {tick(kpis.hi.j)}</div>
+                </div>
+                {kpis.showLow && (
+                  <div className="kpi">
+                    <div className="label">{t('kpi.lowest')}</div>
+                    <div className="value num">{pct(kpis.lo.w)}</div>
+                    <div className="meta">{kpis.tied > 1 ? t('kpi.tied', { n: kpis.tied }) : `${tick(kpis.lo.i)} · ${tick(kpis.lo.j)}`}</div>
                   </div>
-                 </div>
+                )}
+                <div className="kpi">
+                  <div className="label">{t('kpi.shared')}</div>
+                  <div className="value num">{int(result.overlap_matrix[pair.i][pair.j].count)}</div>
+                  <div className="meta">{t('kpi.shared_sub', { a: tick(pair.i), b: tick(pair.j) })}</div>
+                </div>
+                <div className="kpi">
+                  <div className="label">{t('kpi.funds')}</div>
+                  <div className="value num">{result.tickers.length}</div>
+                  <div className="meta">{t('kpi.full', { full: kpis.full })}</div>
+                </div>
               </div>
             )}
+
+            {incomplete.length > 0 && (
+              <div className="notice" role="note">
+                <AlertTriangle size={14} />
+                <span>{t('notice.partial', { tickers: incomplete.join(', ') })}</span>
+              </div>
+            )}
+
+            <div className="grid">
+              <OverlapMatrix data={result} pair={pair} onSelect={setPair} />
+              <PairDetail data={result} pair={pair} onSelect={setPair} />
+              <SharedTable key={`${pair.i}-${pair.j}`} data={result} pair={pair} />
+            </div>
+
+            <div className="section-head">
+              <h2>{t('funds.title')}</h2>
+              <p className="desc">{t('funds.desc')} {t('funds.legend', { a: tick(pair.i), b: tick(pair.j) })}</p>
+            </div>
+            <div className="funds">
+              {(() => {
+                const sizes = rowSizes(result.tickers.length);
+                const spans: number[] = [];
+                sizes.forEach((s) => { for (let k = 0; k < s; k++) spans.push(6 / s); });
+                const cell = result.overlap_matrix[pair.i][pair.j];
+                const scaleMax = Math.max(0, ...result.tickers.flatMap((tk) => (result.holdings[tk] ?? []).slice(0, 10).map((h) => h.percent || 0)), ...result.tickers.map((tk) => result.holdings[tk]?.[0]?.percent ?? 0));
+                const keys = new Set<string>();
+                cell.common.forEach((c) => { keys.add(c.symbol.toUpperCase().replace(/[\s.\-/_]/g, '')); keys.add(c.name.toUpperCase().replace(/[\s.\-/_]/g, '')); });
+                return result.tickers.map((tk, idx) => (
+                  <FundCard key={tk} ticker={tk} data={result} span={spans[idx]} scaleMax={scaleMax} sharedKeys={idx === pair.i || idx === pair.j ? keys : undefined} />
+                ));
+              })()}
+            </div>
+            <p className="foot">{t('footer.note')}</p>
           </div>
-        </div>
+        )}
       </main>
+    </div>
+  );
+}
+
+function Skeleton() {
+  return (
+    <div aria-hidden="true">
+      <div className="kpis">
+        {[0, 1, 2].map((k) => (
+          <div key={k}>
+            <div className="skel" style={{ width: 80, height: 12 }} />
+            <div className="skel" style={{ width: k === 0 ? 120 : 80, height: k === 0 ? 32 : 22, marginTop: 8 }} />
+          </div>
+        ))}
+      </div>
+      <div className="grid">
+        <div className="card span-5" style={{ height: 260 }}><div className="skel" style={{ height: '100%' }} /></div>
+        <div className="card span-7" style={{ height: 260 }}><div className="skel" style={{ height: '100%' }} /></div>
+      </div>
     </div>
   );
 }

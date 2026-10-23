@@ -1,71 +1,133 @@
 {
-  "title": "ETF Overlap Calculator",
+  "title": "ETF overlap",
   "meta": {
-    "title": "ETF Overlap Calculator | US & HK Stocks",
-    "description": "Free online ETF overlap analysis tool. Compare holdings overlap between US and HK ETFs to optimize your portfolio and avoid duplication.",
+    "title": "ETF Overlap Calculator | US & HK ETF holdings compared",
+    "description": "Free ETF overlap analysis. Compare the full holdings of US and HK ETFs and see how much of your portfolio is the same stocks twice.",
     "keywords": "ETF, Overlap, Holdings, Portfolio, US Stocks, HK Stocks, Diversification"
   },
-  "step1": "Step 1: Select Market",
-  "step2": "Step 2: Add ETFs",
+  "nav": {
+    "language": "Switch language",
+    "github": "GitHub repository",
+    "home": "ETF overlap"
+  },
   "market": {
-    "us": "US Market",
-    "hk": "HK Market"
+    "label": "Market",
+    "us": "US",
+    "hk": "HK"
   },
-  "selected": "Selected ETFs",
-  "clear": "Clear",
-  "empty_list": "Please add ETFs",
-  "search_placeholder": "Search {{market}} ETF (e.g., {{example}})...",
-  "analyze_btn": "Analyze",
-  "analyzing": "Analyzing...",
-  "error": {
-    "min_two": "Please select at least two ETFs to compare",
-    "failed": "Analysis failed, please check network or try again later"
+  "setup": {
+    "funds": "Funds to compare",
+    "search_placeholder": "Search {{market}} ETFs, e.g. {{example}}",
+    "compare": "Compare overlap",
+    "comparing": "Comparing…",
+    "clear": "Clear",
+    "remove": "Remove {{ticker}}",
+    "need_more_zero": "Add at least two ETFs to compare",
+    "need_more_one": "Add one more ETF to compare",
+    "ready": "{{count}} selected, ready to compare",
+    "no_results": "No matching ETFs",
+    "searching": "Searching…"
   },
-  "ready_state": {
-    "title": "Ready",
-    "desc": "Select a market and add at least two ETFs on the left, then click 'Analyze' to see their holdings overlap.",
-    "note": "Holdings come from issuers' official files first, then SEC N-PORT. If neither is available only the top 10 are shown and flagged."
+  "empty": {
+    "subline": "Add two or more ETFs to see how much of their holdings is the same stocks.",
+    "title": "Pick two or more ETFs to compare",
+    "desc": "For each pair, overlap is the smaller of the two weights, summed over the positions both funds hold. Data comes from issuers' official files first, then SEC N-PORT.",
+    "examples": "Or start from an example",
+    "ex": [
+      {
+        "name": "Two S&P 500 funds"
+      },
+      {
+        "name": "S&P 500, Nasdaq-100 and a dividend fund"
+      },
+      {
+        "name": "Two US aggregate bond funds"
+      }
+    ]
   },
-  "result": {
-    "title": "Analysis Result",
-    "desc": "Comparing holdings overlap for {{tickers}}.",
-    "note": "* Data from issuer holdings files / SEC N-PORT; falls back to Yahoo Finance top 10 (flagged) when full holdings are unavailable.",
-    "holdings_overview": "Holdings Overview",
-    "no_data": "No data",
-    "incomplete_banner": "Full holdings unavailable for: {{tickers}}. Overlap is likely understated.",
-    "badge_complete": "Full holdings",
-    "badge_partial": "Partial holdings",
-    "as_of": "as of {{date}}",
-    "sec_note": "SEC quarterly filing; may lag by months",
-    "count_info": "{{count}} positions, weights sum to {{coverage}}%",
-    "truncated_list": "Showing first {{n}} of {{total}}",
-    "reason": {
-      "top10_only": "Full holdings unavailable; only the top 10 from Yahoo are shown",
-      "truncated": "Source returned only part of the holdings",
-      "low_coverage": "Weights sum is low; some assets may be missing",
-      "few_holdings": "Source provided very few holdings"
-    },
-    "source": {
-      "ishares": "iShares official",
-      "vanguard": "Vanguard official",
-      "spdr": "SPDR official",
-      "invesco": "Invesco official",
-      "sec": "SEC N-PORT",
-      "yahoo": "Yahoo Finance"
-    }
+  "finding": {
+    "twin": "{{a}} and {{b}} overlap by {{pct}}: close to the same portfolio.",
+    "heavy": "{{a}} and {{b}} overlap by {{pct}}, so holding both adds little diversification.",
+    "partial": "{{a}} and {{b}} overlap by {{pct}}; part of what you hold is duplicated.",
+    "light": "{{a}} and {{b}} overlap by only {{pct}}: largely complementary.",
+    "single": "At least two ETFs are needed to compare."
+  },
+  "kpi": {
+    "highest": "Highest overlap",
+    "lowest": "Lowest overlap",
+    "shared": "Shared positions",
+    "shared_sub": "between {{a}} and {{b}}",
+    "funds": "Funds compared",
+    "full": "{{full}} with full holdings",
+    "unit_positions": "",
+    "tied": "{{n}} pairs tied"
+  },
+  "notice": {
+    "partial": "Full holdings are unavailable for {{tickers}}; any overlap involving them is understated."
   },
   "matrix": {
-    "title": "Overlap Matrix",
-    "click_hint": "Click for details",
-    "modal": {
-      "title": "Overlap Details",
-      "weight": "Overlap Weight",
-      "common_stocks": "Common Holdings",
-      "count_unit": "",
-      "symbol": "Symbol",
-      "name": "Name",
-      "weight_in": "{{ticker}} Weight",
-      "no_common": "No common holdings"
-    }
+    "title": "Overlap matrix",
+    "desc": "Select a cell to list the positions that pair has in common.",
+    "self": "—",
+    "select": "Show positions shared by {{a}} and {{b}}"
+  },
+  "pair": {
+    "title": "{{a}} and {{b}}",
+    "desc": "Bars count positions: how many of each fund's holdings the other one also holds. Sources and dates are below.",
+    "positions_shared": "{{shared}} of {{total}} positions are also in {{other}}",
+    "drift": "{{a}} is as of {{da}} and {{b}} as of {{db}}, {{days}} days apart; weights may have drifted.",
+    "all": "All pairs"
+  },
+  "shared": {
+    "title": "Shared positions",
+    "desc": "Ordered by the smaller of the two weights.",
+    "holding": "Holding",
+    "weight_in": "{{ticker}} weight",
+    "overlap": "Overlap",
+    "show_all": "Show all {{n}}",
+    "show_less": "Show fewer",
+    "none": "These two funds hold nothing in common.",
+    "none_partial": "Nothing in common among the holdings we could get, but at least one fund's data is incomplete.",
+    "bar": "Share of overlap",
+    "show_part": "Show {{n}} of {{total}}"
+  },
+  "funds": {
+    "title": "Holdings by fund",
+    "desc": "Where each fund's data comes from, how recent it is and how complete.",
+    "complete": "Full holdings",
+    "partial": "Partial holdings",
+    "positions": "{{n}} positions",
+    "coverage": "weights sum to {{pct}}",
+    "as_of": "as of {{date}}",
+    "no_date": "date unknown",
+    "sec_note": "SEC files quarterly, so this can lag by months.",
+    "show_all": "Show all {{n}}",
+    "show_less": "Show fewer",
+    "no_data": "No data",
+    "issuer_note": "The issuer's daily holdings file.",
+    "legend": "In the {{a}} and {{b}} lists, blue bars are positions both funds hold; bar length is scaled to the largest weight across funds.",
+    "show_part": "Show {{n}} of {{total}}"
+  },
+  "reason": {
+    "top10_only": "Full holdings are unavailable; only the top 10 from Yahoo are shown.",
+    "truncated": "The source returned only part of the holdings.",
+    "low_coverage": "Weights sum is low; some assets may be missing.",
+    "few_holdings": "The source provided very few holdings."
+  },
+  "source": {
+    "ishares": "iShares official",
+    "vanguard": "Vanguard official",
+    "spdr": "SPDR official",
+    "invesco": "Invesco official",
+    "sec": "SEC N-PORT",
+    "yahoo": "Yahoo Finance"
+  },
+  "error": {
+    "min_two": "Select at least two ETFs to compare",
+    "failed": "The comparison didn't load. Check your connection and try again.",
+    "retry": "Retry"
+  },
+  "footer": {
+    "note": "Data from issuers' official holdings files and SEC N-PORT; falls back to the Yahoo Finance top 10 (flagged) when full holdings are unavailable."
   }
 }

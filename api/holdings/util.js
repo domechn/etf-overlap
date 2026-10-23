@@ -33,6 +33,9 @@ export async function httpGet(url, { headers = {}, as = 'text', timeout = 20000,
 // 统一 ticker 写法: BRK.B / BRK-B / BRK/B / BRKB 视为同一个
 export const normTicker = (s) => String(s ?? '').toUpperCase().replace(/[\s.\-/_]/g, '');
 
+// 没有 CUSIP 时从美国 ISIN (US + 9 位 CUSIP + 校验位) 中取
+export const cusipOf = (h) => h.cusip || (/^US[0-9A-Z]{9}\d$/.test(h.isin || '') ? h.isin.slice(2, 11) : '');
+
 export const isBlank = (s) => s == null || String(s).trim() === '' || String(s).trim() === '-';
 
 export const num = (v) => {

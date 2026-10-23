@@ -16,7 +16,7 @@ export const SharedTable: React.FC<Props> = ({ data, pair }) => {
   const a = data.tickers[pair.i];
   const b = data.tickers[pair.j];
   const cell = data.overlap_matrix[pair.i][pair.j];
-  const rows = [...cell.common].sort((x, y) => Math.min(y.weight_a, y.weight_b) - Math.min(x.weight_a, x.weight_b));
+  const rows = cell.common; // already sorted by min(weight_a, weight_b) on the server
   const shown = expanded ? rows : rows.slice(0, COLLAPSED);
   const maxMin = rows.length ? Math.min(rows[0].weight_a, rows[0].weight_b) || 1 : 1;
   const partial = !data.holdings_meta[a]?.complete || !data.holdings_meta[b]?.complete;

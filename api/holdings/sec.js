@@ -1,14 +1,15 @@
 import { httpGet, SEC_UA, num, toIsoDate } from './util.js';
 
-let tickerCache = null;
+let tickerCache = null; // promise: 并发请求共用同一次下载
 async function seriesFor(symbol) {
-  if (!tickerCache) {
-    const j = await httpGet('https://www.sec.gov/files/company_tickers_mf.json', { as: 'json', headers: { 'User-Agent': SEC_UA } });
-    const map = {};
-    for (const [cik, seriesId, , sym] of j.data) map[String(sym).toUpperCase()] = { seriesId, cik };
-    tickerCache = map;
-  }
-  return tickerCache[symbol.toUpperCase()];
+  tickerCache ??= httpGet('https://www.sec.gov/files/company_tickers_mf.json', { as: 'json', headers: { 'User-Agent': SEC_UA } })
+    .then((j) => {
+      const map = {};
+      for (const [cik, seriesId, , sym] of j.data) map[String(sym).toUpperCase()] = { seriesId, cik };
+      return map;
+    })
+    .catch((e) => { tickerCache = null; throw e; });
+  return (await tickerCache)[symbol.toUpperCase()];
 }
 
 const tag = (block, t) => block.match(new RegExp(`<${t}>([^<]*)</${t}>`))?.[1]?.trim() ?? '';

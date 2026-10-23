@@ -3,6 +3,16 @@ export const pct = (v: number, digits = 1) => `${(v * 100).toFixed(digits)}%`;
 export const fmtDate = (d: string) => d.replace(/-/g, '\u2011');
 export const int = (n: number) => n.toLocaleString('en-US');
 
+/** Same rule as the server's normTicker: BRK.B / BRK-B / BRKB match. */
+export const normKey = (s: string) => s.toUpperCase().replace(/[\s.\-/_]/g, '');
+
+/** Every fund pair (upper triangle of the overlap matrix) with its overlap weight. */
+export const pairsOf = (m: { weight: number }[][]) => {
+  const out: { i: number; j: number; w: number }[] = [];
+  m.forEach((row, i) => row.forEach((c, j) => j > i && out.push({ i, j, w: c.weight })));
+  return out;
+};
+
 export const daysBetween = (a: string, b: string) => {
   const ta = Date.parse(a);
   const tb = Date.parse(b);

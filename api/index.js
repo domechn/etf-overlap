@@ -1,6 +1,8 @@
 import express from 'express';
 import YahooFinance from 'yahoo-finance2';
 import cors from 'cors';
+import { getFullHoldings } from './holdings/index.js';
+import { normTicker } from './holdings/util.js';
 
 const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
@@ -52,122 +54,121 @@ app.get('/api/search', async (req, res) => {
 });
 
 // 分析 API
+const MAX_HOLDINGS = 300;
+const MAX_COMMON = 300;
+const keyOf = (h, cusipToTicker) => {
+  const t = normTicker(h.symbol);
+  if (t) return t;
+  const cusip = h.cusip || (/^US[0-9A-Z]{9}\d$/.test(h.isin || '') ? h.isin.slice(2, 11) : '');
+  if (cusip) return cusipToTicker.get(cusip) || `CUSIP:${cusip}`;
+  return h.name ? `NAME:${h.name.toUpperCase()}` : '';
+};
+
 app.post('/api/analyze', async (req, res) => {
-  const { tickers, market } = req.body;
+  const { tickers } = req.body;
   if (!tickers || !Array.isArray(tickers)) {
     return res.status(400).json({ error: 'Invalid tickers' });
   }
 
   const data = {};
   const etf_info = {};
+  const holdings_meta = {};
 
   try {
-    // 并行获取数据
     await Promise.all(tickers.map(async (symbol) => {
+      let yahooHoldings = [];
+      let family = '';
+      let longName = '';
       try {
-        // 获取 Quote Summary，包含 topHoldings 和 price/summaryDetail
-        // modules: topHoldings, summaryDetail, price
-        const result = await yahooFinance.quoteSummary(symbol, { modules: ['topHoldings', 'price', 'summaryDetail'] });
-        
-        // 提取基本信息
+        const result = await yahooFinance.quoteSummary(symbol, { modules: ['topHoldings', 'price', 'summaryDetail', 'fundProfile'] }, { validateResult: false });
         const price = result.price || {};
+        longName = price.longName || price.shortName || '';
+        family = result.fundProfile?.family || '';
         etf_info[symbol] = {
-            shortname: price.shortName || symbol,
-            longname: price.longName || symbol,
-            currency: price.currency || ''
+          shortname: price.shortName || symbol,
+          longname: price.longName || symbol,
+          currency: price.currency || '',
         };
-
-        // 提取持仓
-        // yahoo-finance2 返回的 holdings 结构:
-        // { symbol: 'NVDA', holdingPercent: 0.07, holdingName: 'NVIDIA Corp' }
-        const holdings = result.topHoldings?.holdings || [];
-        
-        data[symbol] = holdings.map(h => ({
-            symbol: h.symbol,
-            name: h.holdingName,
-            percent: h.holdingPercent // 注意：可能是 0.07 或 7.0，yf2通常返回小数
+        yahooHoldings = (result.topHoldings?.holdings || []).map((h) => ({
+          symbol: h.symbol || '',
+          name: h.holdingName,
+          percent: h.holdingPercent,
         }));
-
       } catch (e) {
         console.error(`Error fetching ${symbol}:`, e.message);
-        data[symbol] = [];
         etf_info[symbol] = { shortname: symbol, longname: symbol, currency: '' };
       }
+
+      const full = await getFullHoldings(symbol, { family, name: longName, yahooHoldings });
+      data[symbol] = full.holdings;
+      holdings_meta[symbol] = {
+        source: full.source,
+        as_of: full.asOf || '',
+        complete: full.complete,
+        count: full.holdings.length,
+        total: full.total || full.holdings.length,
+        coverage: full.coverage,
+        reason: full.reason || '',
+      };
     }));
 
-    // 计算重叠度
+    // 用已知 "CUSIP -> ticker" 把没有 ticker 的持仓(如 SEC 数据)对齐到同一个 key
+    const cusipToTicker = new Map();
+    for (const list of Object.values(data)) {
+      for (const h of list) {
+        const t = normTicker(h.symbol);
+        const c = h.cusip || (/^US[0-9A-Z]{9}\d$/.test(h.isin || '') ? h.isin.slice(2, 11) : '');
+        if (t && c) cusipToTicker.set(c, t);
+      }
+    }
+
+    // etf_weights[etf][key] = { weight, symbol, name }
     const etf_weights = {};
-    for (const [etf, holdings] of Object.entries(data)) {
-        const weights = {};
-        holdings.forEach(h => {
-            weights[h.symbol] = h.percent;
-        });
-        etf_weights[etf] = weights;
+    for (const [etf, list] of Object.entries(data)) {
+      const m = {};
+      for (const h of list) {
+        const k = keyOf(h, cusipToTicker);
+        if (!k || !Number.isFinite(h.percent)) continue;
+        if (m[k]) m[k].weight += h.percent;
+        else m[k] = { weight: h.percent, symbol: h.symbol || '', name: h.name || '' };
+      }
+      etf_weights[etf] = m;
     }
 
-    const overlap_matrix = [];
-    
-    for (let i = 0; i < tickers.length; i++) {
-        const row = [];
-        const etf1 = tickers[i];
-        for (let j = 0; j < tickers.length; j++) {
-            const etf2 = tickers[j];
-            
-            const w1 = etf_weights[etf1] || {};
-            const w2 = etf_weights[etf2] || {};
-
-            if (etf1 === etf2) {
-                row.push({
-                    weight: 1.0,
-                    count: Object.keys(w1).length,
-                    common: Object.keys(w1).map(s => ({
-                        symbol: s,
-                        name: data[etf1].find(h => h.symbol === s)?.name || s,
-                        weight_a: w1[s],
-                        weight_b: w1[s]
-                    }))
-                });
-                continue;
-            }
-
-            // 找交集
-            const symbols1 = Object.keys(w1);
-            const symbols2 = new Set(Object.keys(w2));
-            const commonSymbols = symbols1.filter(s => symbols2.has(s));
-
-            let overlap_weight = 0.0;
-            const common_details = [];
-
-            for (const s of commonSymbols) {
-                const weightA = w1[s];
-                const weightB = w2[s];
-                overlap_weight += Math.min(weightA, weightB);
-
-                const name = data[etf1].find(h => h.symbol === s)?.name || '';
-                common_details.push({
-                    symbol: s,
-                    name: name,
-                    weight_a: weightA,
-                    weight_b: weightB
-                });
-            }
-
-            row.push({
-                weight: overlap_weight,
-                count: commonSymbols.length,
-                common: common_details
-            });
+    const overlap_matrix = tickers.map((etf1) =>
+      tickers.map((etf2) => {
+        const w1 = etf_weights[etf1] || {};
+        const w2 = etf_weights[etf2] || {};
+        if (etf1 === etf2) {
+          return {
+            weight: 1.0,
+            count: Object.keys(w1).length,
+            common: Object.values(w1)
+              .sort((x, y) => y.weight - x.weight)
+              .slice(0, MAX_COMMON)
+              .map((x) => ({ symbol: x.symbol || x.name, name: x.name, weight_a: x.weight, weight_b: x.weight })),
+          };
         }
-        overlap_matrix.push(row);
+        let overlap_weight = 0;
+        const common = [];
+        for (const [k, a] of Object.entries(w1)) {
+          const b = w2[k];
+          if (!b) continue;
+          overlap_weight += Math.min(a.weight, b.weight);
+          common.push({ symbol: a.symbol || b.symbol || a.name, name: a.name || b.name, weight_a: a.weight, weight_b: b.weight });
+        }
+        common.sort((x, y) => Math.min(y.weight_a, y.weight_b) - Math.min(x.weight_a, x.weight_b));
+        return { weight: overlap_weight, count: common.length, common: common.slice(0, MAX_COMMON) };
+      }),
+    );
+
+    // 控制响应体积 (Vercel 限制 4.5MB): 前端只展示权重最大的若干条, 完整条数见 holdings_meta
+    const trimmed = {};
+    for (const [etf, list] of Object.entries(data)) {
+      trimmed[etf] = [...list].sort((a, b) => (b.percent || 0) - (a.percent || 0)).slice(0, MAX_HOLDINGS).map(({ symbol, name, percent }) => ({ symbol, name, percent }));
     }
 
-    res.json({
-        holdings: data,
-        etf_info,
-        overlap_matrix,
-        tickers
-    });
-
+    res.json({ holdings: trimmed, etf_info, holdings_meta, overlap_matrix, tickers });
   } catch (error) {
     console.error('Analyze error:', error);
     res.status(500).json({ error: error.message });

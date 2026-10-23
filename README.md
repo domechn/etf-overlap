@@ -15,7 +15,12 @@
 
 ### 2. 持仓分析
 
-- 自动获取选中 ETF 的前十大持仓股（Top Holdings）。
+- 获取 ETF 的**完整持仓**，按以下优先级取数：
+  1. 发行商官方每日持仓文件：iShares、Vanguard、SPDR (State Street)、Invesco
+  2. SEC N-PORT 申报（免费，覆盖所有美国注册 ETF，但按季度披露，有数月延迟）
+  3. Yahoo Finance 前 10 大持仓（兜底）
+- 无法获取完整持仓时，页面会显示橙色提示并标注原因；每只 ETF 都标注数据来源和截止日期。
+- 可通过环境变量 `SEC_USER_AGENT`（格式 `name email`）自定义访问 SEC 时的 User-Agent。
 - 显示每个持仓股的名称、代码及权重占比。
 
 ### 3. 重叠度计算 (Overlap Analysis)
@@ -34,4 +39,4 @@
 - **前端**: React, TypeScript, Tailwind CSS
 - **构建工具**: Vite
 - **后端/API**: Node.js, Express (适配 Vercel Serverless Functions)
-- **数据源**: Yahoo Finance API (yahoo-finance2)
+- **数据源**: 发行商持仓文件、SEC EDGAR N-PORT、Yahoo Finance (yahoo-finance2，搜索与兜底)

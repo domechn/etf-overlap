@@ -26,6 +26,7 @@
     "react-helmet-async": "^2.0.5",
     "react-i18next": "^16.5.1",
     "tailwind-merge": "^3.4.0",
+    "xlsx": "^0.18.5",
     "yahoo-finance2": "^3.11.2"
   },
   "devDependencies": {

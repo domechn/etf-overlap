@@ -24,14 +24,35 @@
   "ready_state": {
     "title": "准备就绪",
     "desc": "请在左侧选择市场并添加至少两个 ETF，点击“开始分析”查看它们的持仓重叠情况。",
-    "note": "注意：基于 Public API 限制，目前仅支持分析前 10 大重仓股。"
+    "note": "数据优先取自发行商官方持仓文件，其次 SEC N-PORT；都拿不到时仅显示前 10 大持仓，并会在结果中标注。"
   },
   "result": {
     "title": "分析结果",
     "desc": "比较了 {{tickers}} 的成分股重叠情况。",
-    "note": "* 数据来源于 Yahoo Finance，可能仅包含前 10 大持仓。",
+    "note": "* 数据来自发行商官方持仓文件 / SEC N-PORT；无法获取完整持仓时回退到 Yahoo Finance 前 10 大并标注。",
     "holdings_overview": "持仓概览",
-    "no_data": "暂无数据"
+    "no_data": "暂无数据",
+    "incomplete_banner": "以下 ETF 未能获取完整持仓，重叠度会被低估：{{tickers}}",
+    "badge_complete": "完整持仓",
+    "badge_partial": "仅部分持仓",
+    "as_of": "截至 {{date}}",
+    "sec_note": "SEC 季度披露，数据可能滞后数月",
+    "count_info": "共 {{count}} 条，权重合计 {{coverage}}%",
+    "truncated_list": "仅显示前 {{n}} 条，共 {{total}} 条",
+    "reason": {
+      "top10_only": "完整持仓暂不可得，仅有 Yahoo 提供的前 10 大持仓",
+      "truncated": "数据源只返回了部分持仓",
+      "low_coverage": "持仓权重合计偏低，可能缺少部分资产",
+      "few_holdings": "数据源只提供了很少的持仓"
+    },
+    "source": {
+      "ishares": "iShares 官方",
+      "vanguard": "Vanguard 官方",
+      "spdr": "SPDR 官方",
+      "invesco": "Invesco 官方",
+      "sec": "SEC N-PORT",
+      "yahoo": "Yahoo Finance"
+    }
   },
   "matrix": {
     "title": "重叠度矩阵",
@@ -44,7 +65,7 @@
       "symbol": "代码",
       "name": "名称",
       "weight_in": "{{ticker}} 权重",
-      "no_common": "无共同成分股 (基于已披露的 Top Holdings)"
+      "no_common": "无共同成分股"
     }
   }
 }
